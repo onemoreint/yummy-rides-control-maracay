@@ -2,6 +2,8 @@
 
 Microapp administrativa privada para gestionar a los **conductores (motorizados)** y las **motocicletas** afiliados a la línea Yummy Rides en Maracay, estado Aragua, Venezuela.
 
+**App publicada:** https://onemoreint.github.io/yummy-rides-control-maracay/ · **Supabase:** proyecto `asiceegyludqcfpqdkkh` (sa-east-1)
+
 > Alcance v1: sólo administración. **No** incluye asignación de carreras, GPS, pagos, tarifas ni pasajeros.
 
 ## Funciones
