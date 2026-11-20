@@ -26,9 +26,11 @@ jobs:
       - run: npm ci
       - run: npm run build
         env:
-          # Configúrelas en Settings → Secrets and variables → Actions
-          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
-          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+          # URL y clave PUBLICABLE de Supabase: son públicas por diseño (van dentro del JS
+          # del navegador); la seguridad la dan RLS y Auth. Pueden sobrescribirse con
+          # secretos del repositorio. NUNCA ponga aquí la clave service_role.
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL || 'https://asiceegyludqcfpqdkkh.supabase.co' }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY || 'sb_publishable_62MaaZmg907huk1AxaUlKQ_WKARoGJk' }}
           VITE_BASE_PATH: /${{ github.event.repository.name }}/
       - uses: actions/upload-pages-artifact@v3
         with:
