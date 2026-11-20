@@ -1,0 +1,16 @@
+node_modules
+dist
+dev-dist
+*.local
+.env
+.env.*
+!.env.example
+.DS_Store
+*.log
+coverage
+supabase/.temp
+supabase/.branches
+# Respaldos y datos personales: jamás al repositorio
+backups/
+*.dump
+*.sql.gz

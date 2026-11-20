@@ -1,0 +1,16 @@
+# Configuración para Supabase CLI (desarrollo local y "supabase db push").
+project_id = "yummy-rides-control-maracay"
+
+[api]
+schemas = ["public"]
+
+[auth]
+site_url = "http://localhost:5173"
+# Sin registro público: las cuentas sólo las crea el administrador.
+enable_signup = false
+
+[auth.email]
+enable_signup = false
+
+[storage]
+file_size_limit = "10MiB"

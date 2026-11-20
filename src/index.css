@@ -1,0 +1,15 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root { color-scheme: dark; }
+html, body { -webkit-tap-highlight-color: transparent; }
+body { @apply bg-ink-900 font-sans text-gray-100 antialiased; }
+input[type='date']::-webkit-calendar-picker-indicator { filter: invert(0.8); }
+::selection { background: rgba(160, 32, 240, 0.45); }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+}
+@media print {
+  .no-print { display: none !important; }
+}
