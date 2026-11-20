@@ -30,7 +30,7 @@ exception when duplicate_object then null; end $$;
 -- Función genérica updated_at
 -- ---------------------------------------------------------------------
 create or replace function public.set_updated_at()
-returns trigger language plpgsql as $$
+returns trigger language plpgsql set search_path = '' as $$
 begin
   new.updated_at := now();
   return new;
@@ -101,16 +101,18 @@ create index if not exists drivers_draft_idx on public.drivers (is_draft);
 create index if not exists drivers_join_date_idx on public.drivers (join_date);
 create index if not exists drivers_search_trgm on public.drivers using gin (search_text extensions.gin_trgm_ops);
 create index if not exists drivers_id_number_idx on public.drivers (id_number);
+create index if not exists drivers_created_by_idx on public.drivers (created_by);
+create index if not exists drivers_updated_by_idx on public.drivers (updated_by);
 
 create or replace function public.drivers_before_write()
-returns trigger language plpgsql as $$
+returns trigger language plpgsql set search_path = '' as $$
 begin
   new.first_name := initcap(trim(new.first_name));
   new.last_name  := initcap(trim(new.last_name));
   new.middle_name := nullif(initcap(trim(coalesce(new.middle_name, ''))), '');
   new.second_last_name := nullif(initcap(trim(coalesce(new.second_last_name, ''))), '');
   new.id_number := regexp_replace(coalesce(new.id_number, ''), '[^0-9]', '', 'g');
-  new.search_text := lower(extensions.unaccent(concat_ws(' ',
+  new.search_text := lower(extensions.unaccent('extensions.unaccent'::regdictionary, concat_ws(' ',
       new.code, new.first_name, new.middle_name, new.last_name, new.second_last_name,
       new.id_prefix || new.id_number, new.id_prefix || '-' || new.id_number, new.id_number,
       new.phone, new.whatsapp)));
@@ -157,9 +159,11 @@ create table if not exists public.motorcycles (
 create unique index if not exists motorcycles_chassis_unique
   on public.motorcycles (chassis_serial) where chassis_serial is not null;
 create index if not exists motorcycles_search_trgm on public.motorcycles using gin (search_text extensions.gin_trgm_ops);
+create index if not exists motorcycles_created_by_idx on public.motorcycles (created_by);
+create index if not exists motorcycles_updated_by_idx on public.motorcycles (updated_by);
 
 create or replace function public.motorcycles_before_write()
-returns trigger language plpgsql as $$
+returns trigger language plpgsql set search_path = '' as $$
 begin
   -- Placa normalizada: mayúsculas, sin espacios ni guiones (evita duplicados disfrazados)
   new.plate := upper(regexp_replace(coalesce(new.plate, ''), '[^A-Za-z0-9]', '', 'g'));
@@ -167,7 +171,7 @@ begin
   new.model := trim(new.model);
   new.chassis_serial := nullif(upper(trim(coalesce(new.chassis_serial, ''))), '');
   new.engine_serial  := nullif(upper(trim(coalesce(new.engine_serial, ''))), '');
-  new.search_text := lower(extensions.unaccent(concat_ws(' ', new.code, new.plate, new.brand, new.model,
+  new.search_text := lower(extensions.unaccent('extensions.unaccent'::regdictionary, concat_ws(' ', new.code, new.plate, new.brand, new.model,
       new.color, new.owner_name, new.chassis_serial)));
   return new;
 end $$;
@@ -201,6 +205,7 @@ create unique index if not exists assignments_one_current_per_moto
   on public.driver_motorcycle_assignments (motorcycle_id) where is_current;
 create index if not exists assignments_driver_idx on public.driver_motorcycle_assignments (driver_id, start_date desc);
 create index if not exists assignments_moto_idx on public.driver_motorcycle_assignments (motorcycle_id, start_date desc);
+create index if not exists assignments_assigned_by_idx on public.driver_motorcycle_assignments (assigned_by);
 
 -- ---------------------------------------------------------------------
 -- document_types: tipos configurables por el administrador
@@ -247,6 +252,9 @@ create index if not exists documents_driver_idx on public.documents (driver_id);
 create index if not exists documents_moto_idx on public.documents (motorcycle_id);
 create index if not exists documents_expiry_idx on public.documents (expiry_date) where expiry_date is not null;
 create index if not exists documents_review_idx on public.documents (review_status);
+create index if not exists documents_doc_type_idx on public.documents (doc_type);
+create index if not exists documents_uploaded_by_idx on public.documents (uploaded_by);
+create index if not exists documents_reviewed_by_idx on public.documents (reviewed_by);
 create trigger trg_documents_updated before update on public.documents
   for each row execute function public.set_updated_at();
 
@@ -266,6 +274,7 @@ create table if not exists public.affiliation_history (
   created_at      timestamptz not null default now()
 );
 create index if not exists affiliation_driver_idx on public.affiliation_history (driver_id, created_at desc);
+create index if not exists affiliation_changed_by_idx on public.affiliation_history (changed_by);
 
 -- ---------------------------------------------------------------------
 -- audit_logs: registro de auditoría (sólo lo escriben triggers)
@@ -297,5 +306,6 @@ create table if not exists public.system_settings (
   updated_by  uuid references public.users_profiles(id) on delete set null,
   updated_at  timestamptz not null default now()
 );
+create index if not exists settings_updated_by_idx on public.system_settings (updated_by);
 create trigger trg_settings_updated before update on public.system_settings
   for each row execute function public.set_updated_at();

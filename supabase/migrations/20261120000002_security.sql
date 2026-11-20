@@ -84,7 +84,7 @@ create trigger trg_users_profiles_guard before update on public.users_profiles
 -- Autor de cada registro (no confiable si viene del cliente)
 -- ---------------------------------------------------------------------
 create or replace function public.set_actor_columns()
-returns trigger language plpgsql as $$
+returns trigger language plpgsql set search_path = '' as $$
 begin
   if tg_op = 'INSERT' then
     new.created_by := auth.uid();
@@ -101,7 +101,7 @@ create trigger trg_motorcycles_actor before insert or update on public.motorcycl
   for each row execute function public.set_actor_columns();
 
 create or replace function public.documents_before_write()
-returns trigger language plpgsql as $$
+returns trigger language plpgsql set search_path = '' as $$
 begin
   if tg_op = 'INSERT' then
     new.uploaded_by := auth.uid();
@@ -442,62 +442,71 @@ alter table public.affiliation_history enable row level security;
 alter table public.audit_logs enable row level security;
 alter table public.system_settings enable row level security;
 
+-- Nota: (select fn()) hace que Postgres evalúe la función una vez por consulta (rendimiento).
 -- users_profiles
 create policy "perfil propio o admin" on public.users_profiles
-  for select to authenticated using (id = auth.uid() or public.is_admin());
+  for select to authenticated using (id = (select auth.uid()) or (select public.is_admin()));
 create policy "admin actualiza perfiles" on public.users_profiles
-  for update to authenticated using (public.is_admin()) with check (public.is_admin());
+  for update to authenticated using ((select public.is_admin())) with check ((select public.is_admin()));
 -- (sin INSERT ni DELETE: los perfiles los crea el trigger de Auth)
 
 -- drivers (nadie borra: se desactivan)
 create policy "staff lee conductores" on public.drivers
-  for select to authenticated using (public.is_staff());
+  for select to authenticated using ((select public.is_staff()));
 create policy "staff registra conductores" on public.drivers
-  for insert to authenticated with check (public.is_staff());
+  for insert to authenticated with check ((select public.is_staff()));
 create policy "staff edita conductores" on public.drivers
-  for update to authenticated using (public.is_staff()) with check (public.is_staff());
+  for update to authenticated using ((select public.is_staff())) with check ((select public.is_staff()));
 
 -- motorcycles
 create policy "staff lee motos" on public.motorcycles
-  for select to authenticated using (public.is_staff());
+  for select to authenticated using ((select public.is_staff()));
 create policy "staff registra motos" on public.motorcycles
-  for insert to authenticated with check (public.is_staff());
+  for insert to authenticated with check ((select public.is_staff()));
 create policy "staff edita motos" on public.motorcycles
-  for update to authenticated using (public.is_staff()) with check (public.is_staff());
+  for update to authenticated using ((select public.is_staff())) with check ((select public.is_staff()));
 
 -- assignments: sólo lectura directa; escritura únicamente por RPC
 create policy "staff lee asignaciones" on public.driver_motorcycle_assignments
-  for select to authenticated using (public.is_staff());
+  for select to authenticated using ((select public.is_staff()));
 
 -- document_types
 create policy "staff lee tipos" on public.document_types
-  for select to authenticated using (public.is_staff());
-create policy "admin gestiona tipos" on public.document_types
-  for all to authenticated using (public.is_admin()) with check (public.is_admin());
+  for select to authenticated using ((select public.is_staff()));
+create policy "admin inserta tipos" on public.document_types
+  for insert to authenticated with check ((select public.is_admin()));
+create policy "admin edita tipos" on public.document_types
+  for update to authenticated using ((select public.is_admin())) with check ((select public.is_admin()));
+create policy "admin borra tipos" on public.document_types
+  for delete to authenticated using ((select public.is_admin()));
 
 -- documents
 create policy "staff lee documentos" on public.documents
-  for select to authenticated using (public.is_staff());
+  for select to authenticated using ((select public.is_staff()));
 create policy "staff carga documentos" on public.documents
-  for insert to authenticated with check (public.is_staff());
+  for insert to authenticated with check ((select public.is_staff()));
 create policy "staff actualiza documentos" on public.documents
-  for update to authenticated using (public.is_staff()) with check (public.is_staff());
+  for update to authenticated using ((select public.is_staff())) with check ((select public.is_staff()));
 create policy "admin elimina documentos" on public.documents
-  for delete to authenticated using (public.is_admin());
+  for delete to authenticated using ((select public.is_admin()));
 
 -- affiliation_history: sólo lectura (escritura por RPC/trigger)
 create policy "staff lee historial afiliacion" on public.affiliation_history
-  for select to authenticated using (public.is_staff());
+  for select to authenticated using ((select public.is_staff()));
 
 -- audit_logs: sólo lectura; nadie puede editar ni borrar
 create policy "staff lee auditoria" on public.audit_logs
-  for select to authenticated using (public.is_staff());
+  for select to authenticated using ((select public.is_staff()));
 
 -- system_settings
 create policy "staff lee configuracion" on public.system_settings
-  for select to authenticated using (public.is_staff());
-create policy "admin gestiona configuracion" on public.system_settings
-  for all to authenticated using (public.is_admin()) with check (public.is_admin());
+  for select to authenticated using ((select public.is_staff()));
+create policy "admin inserta configuracion" on public.system_settings
+  for insert to authenticated with check ((select public.is_admin()));
+create policy "admin edita configuracion" on public.system_settings
+  for update to authenticated using ((select public.is_admin())) with check ((select public.is_admin()));
+create policy "admin borra configuracion" on public.system_settings
+  for delete to authenticated using ((select public.is_admin()));
 
 -- ---------------------------------------------------------------------
 -- Privilegios: anon no tiene nada; authenticated limitado por RLS

@@ -18,21 +18,21 @@ on conflict (id) do update
 --   motorcycles/<moto_id>/docs/<archivo>
 create policy "staff lee archivos privados" on storage.objects
   for select to authenticated
-  using (bucket_id = 'yummy-private' and public.is_staff());
+  using (bucket_id = 'yummy-private' and (select public.is_staff()));
 
 create policy "staff sube archivos privados" on storage.objects
   for insert to authenticated
-  with check (bucket_id = 'yummy-private' and public.is_staff()
+  with check (bucket_id = 'yummy-private' and (select public.is_staff())
               and (storage.foldername(name))[1] in ('drivers', 'motorcycles'));
 
 create policy "staff reemplaza archivos privados" on storage.objects
   for update to authenticated
-  using (bucket_id = 'yummy-private' and public.is_staff())
-  with check (bucket_id = 'yummy-private' and public.is_staff());
+  using (bucket_id = 'yummy-private' and (select public.is_staff()))
+  with check (bucket_id = 'yummy-private' and (select public.is_staff()));
 
 create policy "admin elimina archivos privados" on storage.objects
   for delete to authenticated
-  using (bucket_id = 'yummy-private' and public.is_admin());
+  using (bucket_id = 'yummy-private' and (select public.is_admin()));
 
 -- ---------------------------------------------------------------------
 -- Tipos de documento iniciales (configurables desde la app)
